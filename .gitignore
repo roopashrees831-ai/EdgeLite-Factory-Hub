@@ -6,3 +6,4 @@ __pycache__/
 
 # Local database
 backend/edgelite.db
+backend/data/workload_measurements.csv
