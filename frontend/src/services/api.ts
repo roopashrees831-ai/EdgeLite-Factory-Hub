@@ -1,7 +1,20 @@
-import { RobotState, Task, TaskReport, EventItem, SystemMetrics, AIAnalyticsData } from '../types';
+import {
+  RobotState,
+  Task,
+  TaskReport,
+  EventItem,
+  SystemMetrics,
+  AIAnalyticsData,
+} from '../types';
 
-const API_BASE = 'http://localhost:8000/api';
-const WS_BASE = 'ws://localhost:8000/ws/telemetry';
+// Use Render backend in production, localhost during local development.
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
+const WS_BASE = API_BASE.replace(/^http/, 'ws').replace(
+  /\/api$/,
+  '/ws/telemetry'
+);
 
 export const api = {
   // System Status
@@ -20,31 +33,44 @@ export const api = {
 
   // Robot Controls
   async startRobot(): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`${API_BASE}/robot/start`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/robot/start`, {
+      method: 'POST',
+    });
     return res.json();
   },
 
   async stopRobot(): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`${API_BASE}/robot/stop`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/robot/stop`, {
+      method: 'POST',
+    });
     return res.json();
   },
 
   async resetRobot(): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`${API_BASE}/robot/reset`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/robot/reset`, {
+      method: 'POST',
+    });
     return res.json();
   },
 
   async homeRobot(): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`${API_BASE}/robot/home`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/robot/home`, {
+      method: 'POST',
+    });
     return res.json();
   },
 
-  async setJointAngles(angles: Record<string, number>): Promise<{ success: boolean }> {
+  async setJointAngles(
+    angles: Record<string, number>
+  ): Promise<{ success: boolean }> {
     const res = await fetch(`${API_BASE}/robot/joints`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(angles),
     });
+
     return res.json();
   },
 
@@ -55,18 +81,29 @@ export const api = {
     return res.json();
   },
 
-  async addTask(data: { name: string; type: string; priority: string; estimated_duration: number }): Promise<Task> {
+  async addTask(data: {
+    name: string;
+    type: string;
+    priority: string;
+    estimated_duration: number;
+  }): Promise<Task> {
     const res = await fetch(`${API_BASE}/tasks`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(data),
     });
+
     if (!res.ok) throw new Error('Failed to add task');
     return res.json();
   },
 
   async restartTask(taskId: string): Promise<any> {
-    const res = await fetch(`${API_BASE}/tasks/${taskId}/restart`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/tasks/${taskId}/restart`, {
+      method: 'POST',
+    });
+
     return res.json();
   },
 
@@ -74,14 +111,22 @@ export const api = {
   async injectFault(faultType: string): Promise<any> {
     const res = await fetch(`${API_BASE}/faults/inject`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fault_type: faultType }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        fault_type: faultType,
+      }),
     });
+
     return res.json();
   },
 
   async clearFault(): Promise<any> {
-    const res = await fetch(`${API_BASE}/faults/clear`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/faults/clear`, {
+      method: 'POST',
+    });
+
     return res.json();
   },
 
@@ -113,18 +158,28 @@ export const api = {
 
   // History
   async getHistory(severity?: string): Promise<EventItem[]> {
-    const url = severity && severity !== 'ALL' 
-      ? `${API_BASE}/history?severity=${severity}` 
-      : `${API_BASE}/history`;
+    const url =
+      severity && severity !== 'ALL'
+        ? `${API_BASE}/history?severity=${severity}`
+        : `${API_BASE}/history`;
+
     const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch history');
+
+    if (!res.ok) {
+      throw new Error('Failed to fetch history');
+    }
+
     return res.json();
   },
 
   // AI Analytics
   async getAIAnalytics(): Promise<AIAnalyticsData> {
     const res = await fetch(`${API_BASE}/ai/analytics`);
-    if (!res.ok) throw new Error('Failed to fetch AI analytics');
+
+    if (!res.ok) {
+      throw new Error('Failed to fetch AI analytics');
+    }
+
     return res.json();
   },
 
@@ -142,9 +197,12 @@ export const api = {
   }): Promise<any> {
     const res = await fetch(`${API_BASE}/settings`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(thresholds),
     });
+
     return res.json();
   },
 };
@@ -156,10 +214,11 @@ export function connectTelemetryWebSocket(
 ): () => void {
   let ws: WebSocket | null = null;
   let isClosed = false;
-  let reconnectTimeout: any = null;
+  let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
   function connect() {
     if (isClosed) return;
+
     try {
       ws = new WebSocket(WS_BASE);
 
@@ -168,12 +227,14 @@ export function connectTelemetryWebSocket(
           const parsed = JSON.parse(event.data);
           onData(parsed);
         } catch (e) {
-          // ignore parse error
+          // Ignore JSON parse errors.
         }
       };
 
       ws.onerror = (e) => {
-        if (onError) onError(e);
+        if (onError) {
+          onError(e);
+        }
       };
 
       ws.onclose = () => {
@@ -192,7 +253,13 @@ export function connectTelemetryWebSocket(
 
   return () => {
     isClosed = true;
-    if (reconnectTimeout) clearTimeout(reconnectTimeout);
-    if (ws) ws.close();
+
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout);
+    }
+
+    if (ws) {
+      ws.close();
+    }
   };
 }
