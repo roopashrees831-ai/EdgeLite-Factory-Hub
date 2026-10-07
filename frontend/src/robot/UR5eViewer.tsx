@@ -1801,12 +1801,20 @@ export const UR5eViewer: React.FC<UR5eViewerProps> = ({
       loader.load(
         `/models/ur5e/${filename}`,
         (collada) => {
+          const sceneRoot = collada?.scene;
+
+          if (!sceneRoot) {
+            console.error(`Loaded ${filename} without a scene.`);
+            setLoadError(`Failed to load UR5e model: ${filename}`);
+            return;
+          }
+
           enhanceMaterials(
-            collada.scene,
+            sceneRoot,
           );
 
           loaded[filename] =
-            collada.scene;
+            sceneRoot;
 
           loadedCount += 1;
 
