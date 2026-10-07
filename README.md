@@ -1,4 +1,3 @@
-@'
 # EdgeLite Factory Hub
 
 ### Cost-Effective Edge AI & Digital Twin for Smart Shop-Floor Automation
