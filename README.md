@@ -16,9 +16,6 @@ The system provides a realistic **UR5e robotic digital twin**, real-time machine
 
 ---
 
-## 🔗 Live Project
-
-[**Open**](https://edgelite-factory.onrender.com)
 
 ## 🎥 Live Demo
 
